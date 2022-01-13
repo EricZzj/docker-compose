@@ -1,19 +1,45 @@
-version: '3.9'
+version: "3"
 services:
-  mysql:
-    image: mysql:8
-    container_name: mysql
+  mysql8.0:
+    # 镜像名
+    image: mysql:8.0.27
+    # 容器名(以后的控制都通过这个)
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+    container_name: mysql8.0
+    # 重启策略
     restart: always
     environment:
+      # 时区上海
       TZ: Asia/Shanghai
-      MYSQL_ROOT_PASSWORD:
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-      - data:/var/lib/mysql
-#      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # root 密码
+      MYSQL_ROOT_PASSWORD: root
+      # 初始化数据库(后续的初始化sql会在这个库执行)
+      MYSQL_DATABASE: test
+      # 初始化用户(不能是root 会报错, 后续需要给新用户赋予权限)
+      MYSQL_USER: test
+      # 用户密码
+      MYSQL_PASSWORD: test
+      # 映射端口
     ports:
-      - "3306:3306"
-    command: ["--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+      - 3306:3306
+    volumes:
+      # 数据挂载
+      - db-store:/var/lib/mysql
+      # 配置挂载
+      - ./data/mysql/conf/:/etc/mysql/conf.d/
+      # 初始化目录挂载
+      - ./data/mysql/init/:/data/init/
+    command:
+      # 将mysql8.0默认密码策略 修改为 原先 策略 (mysql8.0对其默认策略做了更改 会导致密码无法匹配)
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+
+
 volumes:
-  data:
+  db-store:
+    driver: local
